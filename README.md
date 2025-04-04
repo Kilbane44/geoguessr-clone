@@ -31,7 +31,7 @@ A browser-based geography game where players guess locations based on Street Vie
 
 ## Live Demo
 
-Play the game at: [GeoGuessr Clone](https://yourusername.github.io/geoguessr-clone)
+Play the game at: [GeoGuessr Clone](https://kilbane44.github.io/geoguessr-clone)
 
 ## Local Development
 
