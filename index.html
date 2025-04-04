@@ -168,12 +168,33 @@
     .map-container:not(.expanded):hover #map {
         transform: scale(2);
     }
+    #mute-btn {
+      position: absolute;
+      top: 15px; /* Align with compass top */
+      right: 90px; /* Position left of the compass */
+      z-index: 1001; /* Slightly above other overlays */
+      background: rgba(0, 0, 0, 0.4);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      font-size: 16px;
+      line-height: 30px; /* Center icon vertically */
+      text-align: center;
+      cursor: pointer;
+      padding: 0;
+    }
+    #mute-btn:hover {
+      background: rgba(0, 0, 0, 0.6);
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div id="street-view" class="street-view">
       <h1 class="game-title">GeoGuessr Clone</h1>
+      <button id="mute-btn" title="Mute/Unmute Music">🔊</button>
       <div class="compass">
         <div class="compass-arrow"></div>
       </div>
@@ -195,6 +216,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Background Music -->
+  <audio id="background-music" src="music.mp3" loop></audio>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -269,8 +293,14 @@
         }
         
         attempts++;
+        
+        // Add a small delay to avoid hitting rate limits
+        if (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 250)); // Increased delay to 250ms
+        }
       }
 
+      console.error('Could not find a suitable Street View location after', maxAttempts, 'attempts.');
       // If we couldn't find a new location, reset the used locations list
       usedLocations = [];
       return findRandomLocation();
@@ -534,8 +564,33 @@
       return degrees * (Math.PI/180);
     }
 
+    // --- Music Control ---
+    function setupMusicControl() {
+      const audio = document.getElementById('background-music');
+      const muteBtn = document.getElementById('mute-btn');
+      
+      // Set initial soft volume
+      audio.volume = 0.2;
+
+      // Attempt to play on load (might be blocked by browser until interaction)
+      audio.play().catch(error => {
+        console.log("Audio autoplay blocked by browser. Waiting for user interaction.");
+        // Optional: Try playing again after first interaction, e.g., map click
+      });
+
+      muteBtn.addEventListener('click', () => {
+        audio.muted = !audio.muted;
+        muteBtn.textContent = audio.muted ? '🔇' : '🔊';
+        muteBtn.title = audio.muted ? 'Unmute Music' : 'Mute Music';
+      });
+    }
+    // --- End Music Control ---
+
     // Start the game when the page loads
-    window.onload = initGame;
+    window.onload = () => {
+      initGame();
+      setupMusicControl(); // Call music setup after game init
+    };
   </script>
 </body>
 </html> 
