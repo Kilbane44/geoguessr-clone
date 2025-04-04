@@ -1,33 +1,35 @@
 # GeoGuessr Clone
 
-A browser-based geography game where players guess locations based on Street View images.
+A web-based geography game where players guess locations based on Street View images.
+
+## Setup
+
+1. Clone the repository
+2. Copy `config.template.js` to `config.js`
+3. Get a Google Maps API key from the [Google Cloud Console](https://console.cloud.google.com/)
+4. Add your API key to `config.js`
 
 ## Features
 
-- Random locations from around the world using Google Street View
+- Street View integration for location exploration
 - Interactive map for making guesses
-- Distance calculation between guess and actual location
-- Score tracking across multiple rounds
-- Visual feedback showing the actual location and distance line
-- No server required - runs entirely in the browser
+- Score calculation based on distance
+- Compass overlay for navigation
+- Limited to reasonable latitude ranges (-55° to 70°)
 
 ## How to Play
 
-1. Open `index.html` in your web browser
-2. You'll be shown a Street View image from a random location
-3. Click on the map to place your guess
-4. Click "Make Guess" to see how close you were
-5. The red marker shows the actual location
-6. The red line shows the distance between your guess and the actual location
-7. Your score is based on how close your guess was
-8. Play continues for 5 rounds
+1. You'll be shown a random location in Street View
+2. Explore the area using Street View controls
+3. Make your guess by clicking on the map
+4. See how close your guess was to the actual location
+5. Play multiple rounds to improve your score
 
 ## Technologies Used
 
-- Google Street View API
+- Google Maps API for Street View
 - Leaflet.js for the interactive map
-- Pure JavaScript (no frameworks)
-- HTML5 & CSS3
+- HTML5/CSS3/JavaScript
 
 ## Live Demo
 

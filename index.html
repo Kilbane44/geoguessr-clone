@@ -166,10 +166,8 @@
   </div>
 
   <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-   integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-   crossorigin="anonymous"></script>
-
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="config.js"></script>
   <script>
     let map = null;
     let marker = null;
@@ -179,6 +177,11 @@
     const maxRounds = 5;
     let totalScore = 0;
     let usedLocations = [];
+
+    // Check if API key is set
+    if (!config || !config.GOOGLE_MAPS_API_KEY || config.GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
+      alert('Please set up your Google Maps API key in config.js');
+    }
 
     // Function to generate random coordinates
     function getRandomCoordinates() {
@@ -253,7 +256,7 @@
 
       // Load Google Maps API
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBJQmU6Bt9rHC2G5oHQFVjPbZcXomI9duU&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${config.GOOGLE_MAPS_API_KEY}&libraries=places`;
       script.async = true;
       script.defer = true;
       script.onload = startNewRound;
