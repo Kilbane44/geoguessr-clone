@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoGuessr Clone - Simple Version</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f0f0f0;
+    }
+    
+    .container {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .header {
+      background-color: #333;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    
+    .street-view {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .street-view img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .map-container {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 300px;
+      height: 200px;
+      border: 2px solid #333;
+      border-radius: 4px;
+      background-color: white;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+    
+    .footer {
+      background-color: #333;
+      color: white;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .guess-btn {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    
+    .score {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+    
+    .results {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      text-align: center;
+      z-index: 2000;
+      max-width: 90%;
+      width: 500px;
+      display: none;
+    }
+    
+    .results-map {
+      width: 100%;
+      height: 300px;
+      margin: 1rem 0;
+    }
+    
+    .next-btn {
+      background-color: #2196F3;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    
+    .start-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 3000;
+    }
+    
+    .start-container {
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      text-align: center;
+      max-width: 600px;
+    }
+    
+    .offline-notice {
+      background-color: #fff3cd;
+      border: 1px solid #ffeeba;
+      color: #856404;
+      padding: 12px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      text-align: left;
+    }
+    
+    .offline-notice strong {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+    
+    .offline-notice p {
+      margin: 4px 0;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    
+    .try-online-btn {
+      background-color: #17a2b8;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin-right: 10px;
+      margin-top: 1rem;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    
+    .start-container h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: #333;
+    }
+    
+    .start-container p {
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+      line-height: 1.5;
+    }
+    
+    .start-btn {
+      background-color: #2196F3;
+      border: none;
+      color: white;
+      padding: 12px 30px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 18px;
+      margin-top: 1rem;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    
+    .marker {
+      background-color: red;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      cursor: pointer;
+      position: absolute;
+      transform: translate(-50%, -50%);
+    }
+    
+    .end-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                url('https://images.unsplash.com/photo-1516738901171-8eb4fc13bd20?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 3000;
+      display: none;
+    }
+    
+    .end-container {
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      text-align: center;
+      max-width: 600px;
+    }
+    
+    .end-container h2 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: #333;
+    }
+    
+    .restart-btn {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 12px 30px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 18px;
+      margin-top: 1rem;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Round <span id="current-round">1</span> of 5</h2>
+    </div>
+    
+    <div class="main">
+      <div class="street-view" id="street-view">
+        <!-- Street view image will be loaded here -->
+      </div>
+      
+      <div class="map-container">
+        <div id="map">
+          <!-- World map will be loaded here -->
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Equirectangular_projection_SW.jpg/1280px-Equirectangular_projection_SW.jpg" 
+               alt="World Map" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+      </div>
+      
+      <div class="results" id="results">
+        <h3>Round Result</h3>
+        <p>Distance: <span id="distance">0</span> km</p>
+        <p>Score: <span id="round-score">0</span> points</p>
+        
+        <div class="results-map" id="results-map">
+          <!-- Results map will be loaded here -->
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Equirectangular_projection_SW.jpg/1280px-Equirectangular_projection_SW.jpg" 
+               alt="World Map" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        
+        <button class="next-btn" id="next-btn">Next Round</button>
+      </div>
+      
+      <div class="start-screen" id="start-screen">
+        <div class="start-container">
+          <div class="offline-notice">
+            <strong>OFFLINE MODE</strong>
+            <p>You are using the offline version of the game because the online resources could not be loaded.</p>
+            <p>This version works without internet connection but uses static images.</p>
+          </div>
+          <h1>GeoGuessr Clone</h1>
+          <p>Test your geography knowledge by guessing locations from street view images.</p>
+          <p>Look around the street view, then click on the map to place your guess. Try to get as close as possible to the actual location!</p>
+          <a href="index.html" class="try-online-btn">Try Online Version</a>
+          <button class="start-btn" id="start-btn">Start Game</button>
+        </div>
+      </div>
+      
+      <div class="end-screen" id="end-screen">
+        <div class="end-container">
+          <h2>Game Over!</h2>
+          <h3>Final Score: <span id="final-score">0</span> / 25000</h3>
+          <p id="final-message">Well done!</p>
+          <button class="restart-btn" id="restart-btn">Play Again</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <div class="score">
+        Total Score: <span id="total-score">0</span>
+      </div>
+      <button class="guess-btn" id="guess-btn" disabled>Make Guess</button>
+    </div>
+  </div>
+
+  <script>
+    // Street view images
+    const streetViews = [
+      { 
+        image: 'https://upload.wikimedia.org/wikipedia/commons/c/c3/Paris%2C_France._The_Eiffel_Tower%2C_one_of_the_most_recognizable_landmarks_in_the_world._Shot_from_the_Trocadero..jpg', 
+        location: { lat: 48.8584, lng: 2.2945 }, // Paris
+        name: 'Paris, France'
+      },
+      { 
+        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Palace_of_Westminster_from_the_dome_of_St_Paul%27s_Cathedral.jpg/1920px-Palace_of_Westminster_from_the_dome_of_St_Paul%27s_Cathedral.jpg', 
+        location: { lat: 51.5007, lng: -0.1246 }, // London
+        name: 'London, UK'
+      },
+      { 
+        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Tokyo_Shibuya_Crossing.jpg/1280px-Tokyo_Shibuya_Crossing.jpg', 
+        location: { lat: 35.6762, lng: 139.6503 }, // Tokyo
+        name: 'Tokyo, Japan'
+      },
+      { 
+        image: 'https://upload.wikimedia.org/wikipedia/commons/4/47/New_york_times_square-terabass.jpg', 
+        location: { lat: 40.7580, lng: -73.9855 }, // New York
+        name: 'New York City, USA'
+      },
+      { 
+        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/View_over_Colosseum.JPG/1920px-View_over_Colosseum.JPG', 
+        location: { lat: 41.8902, lng: 12.4922 }, // Rome
+        name: 'Rome, Italy'
+      }
+    ];
+
+    // Game variables
+    let currentRound = 0;
+    let totalScore = 0;
+    let guessLocation = null;
+    let hasGuessed = false;
+    
+    // DOM elements
+    const streetViewEl = document.getElementById('street-view');
+    const mapEl = document.getElementById('map');
+    const resultsEl = document.getElementById('results');
+    const resultsMapEl = document.getElementById('results-map');
+    const distanceEl = document.getElementById('distance');
+    const roundScoreEl = document.getElementById('round-score');
+    const totalScoreEl = document.getElementById('total-score');
+    const currentRoundEl = document.getElementById('current-round');
+    const guessBtn = document.getElementById('guess-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const startScreen = document.getElementById('start-screen');
+    const startBtn = document.getElementById('start-btn');
+    const endScreen = document.getElementById('end-screen');
+    const restartBtn = document.getElementById('restart-btn');
+    const finalScoreEl = document.getElementById('final-score');
+    const finalMessageEl = document.getElementById('final-message');
+    
+    // Initialize the game
+    function initGame() {
+      // Shuffle street views
+      shuffleArray(streetViews);
+      
+      // Reset game variables
+      currentRound = 0;
+      totalScore = 0;
+      guessLocation = null;
+      hasGuessed = false;
+      
+      // Update UI
+      updateScore();
+      
+      // Start the first round
+      startRound();
+    }
+    
+    // Start a new round
+    function startRound() {
+      // Update round number
+      currentRoundEl.textContent = currentRound + 1;
+      
+      // Load street view image
+      streetViewEl.innerHTML = `<img src="${streetViews[currentRound].image}" alt="Street View">`;
+      
+      // Reset guess
+      guessLocation = null;
+      hasGuessed = false;
+      guessBtn.disabled = true;
+      
+      // Hide results
+      resultsEl.style.display = 'none';
+    }
+    
+    // Make a guess
+    function makeGuess() {
+      if (!guessLocation) return;
+      
+      // Calculate distance
+      const actualLocation = streetViews[currentRound].location;
+      const distance = calculateDistance(
+        guessLocation.lat, guessLocation.lng,
+        actualLocation.lat, actualLocation.lng
+      );
+      
+      // Calculate score
+      const roundScore = Math.max(0, Math.round(5000 * Math.exp(-distance / 2000)));
+      
+      // Update total score
+      totalScore += roundScore;
+      
+      // Display results
+      distanceEl.textContent = distance.toFixed(2);
+      roundScoreEl.textContent = roundScore;
+      
+      // Add markers to results map
+      displayResultsMap(actualLocation, guessLocation);
+      
+      // Show results
+      resultsEl.style.display = 'block';
+      
+      // Update UI
+      updateScore();
+      
+      // Mark as guessed
+      hasGuessed = true;
+    }
+    
+    // Next round
+    function nextRound() {
+      currentRound++;
+      
+      if (currentRound >= streetViews.length) {
+        // Game over
+        endGame();
+      } else {
+        // Start next round
+        startRound();
+      }
+    }
+    
+    // End game
+    function endGame() {
+      // Update final score
+      finalScoreEl.textContent = totalScore;
+      
+      // Show appropriate message
+      const percentage = (totalScore / (streetViews.length * 5000)) * 100;
+      if (percentage >= 80) {
+        finalMessageEl.textContent = "Amazing! You're a geography master!";
+      } else if (percentage >= 60) {
+        finalMessageEl.textContent = "Great job! You really know your way around the world!";
+      } else if (percentage >= 40) {
+        finalMessageEl.textContent = "Not bad! You have a good sense of geography!";
+      } else if (percentage >= 20) {
+        finalMessageEl.textContent = "Decent effort! Keep exploring to improve!";
+      } else {
+        finalMessageEl.textContent = "Keep practicing! The world is a big place to learn about!";
+      }
+      
+      // Show end screen
+      endScreen.style.display = 'flex';
+    }
+    
+    // Update score display
+    function updateScore() {
+      totalScoreEl.textContent = totalScore;
+    }
+    
+    // Handle map click
+    function handleMapClick(event) {
+      if (hasGuessed) return;
+      
+      // Get click coordinates relative to the map
+      const rect = mapEl.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      
+      // Convert to latitude and longitude
+      const lat = 90 - (y / rect.height * 180);
+      const lng = (x / rect.width * 360) - 180;
+      
+      // Set guess location
+      guessLocation = { lat, lng };
+      
+      // Remove previous marker
+      const prevMarker = mapEl.querySelector('.marker');
+      if (prevMarker) {
+        prevMarker.remove();
+      }
+      
+      // Add marker
+      const marker = document.createElement('div');
+      marker.className = 'marker';
+      marker.style.left = `${x}px`;
+      marker.style.top = `${y}px`;
+      mapEl.appendChild(marker);
+      
+      // Enable guess button
+      guessBtn.disabled = false;
+    }
+    
+    // Display results map with markers
+    function displayResultsMap(actualLocation, guessLocation) {
+      // Clear previous markers
+      while (resultsMapEl.firstChild) {
+        resultsMapEl.firstChild.remove();
+      }
+      
+      // Add world map
+      const mapImage = document.createElement('img');
+      mapImage.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Equirectangular_projection_SW.jpg/1280px-Equirectangular_projection_SW.jpg';
+      mapImage.alt = 'World Map';
+      mapImage.style.width = '100%';
+      mapImage.style.height = '100%';
+      mapImage.style.objectFit = 'cover';
+      resultsMapEl.appendChild(mapImage);
+      
+      // Add actual location marker
+      const actualMarker = document.createElement('div');
+      actualMarker.className = 'marker';
+      actualMarker.style.backgroundColor = 'green';
+      actualMarker.style.left = `${((actualLocation.lng + 180) / 360) * 100}%`;
+      actualMarker.style.top = `${((90 - actualLocation.lat) / 180) * 100}%`;
+      resultsMapEl.appendChild(actualMarker);
+      
+      // Add guess location marker
+      const guessMarker = document.createElement('div');
+      guessMarker.className = 'marker';
+      guessMarker.style.backgroundColor = 'red';
+      guessMarker.style.left = `${((guessLocation.lng + 180) / 360) * 100}%`;
+      guessMarker.style.top = `${((90 - guessLocation.lat) / 180) * 100}%`;
+      resultsMapEl.appendChild(guessMarker);
+      
+      // Add line between markers
+      const lineEl = document.createElement('div');
+      lineEl.style.position = 'absolute';
+      lineEl.style.borderTop = '2px solid black';
+      lineEl.style.width = `${calculateLineWidth(actualLocation, guessLocation)}px`;
+      lineEl.style.left = `${calculateLineLeft(actualLocation, guessLocation)}px`;
+      lineEl.style.top = `${calculateLineTop(actualLocation, guessLocation)}px`;
+      lineEl.style.transform = `rotate(${calculateLineAngle(actualLocation, guessLocation)}deg)`;
+      lineEl.style.transformOrigin = 'left center';
+      resultsMapEl.appendChild(lineEl);
+      
+      // Add location name
+      const nameEl = document.createElement('div');
+      nameEl.style.position = 'absolute';
+      nameEl.style.top = `${((90 - actualLocation.lat) / 180) * 100}%`;
+      nameEl.style.left = `${((actualLocation.lng + 180) / 360) * 100}%`;
+      nameEl.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+      nameEl.style.color = 'white';
+      nameEl.style.padding = '5px';
+      nameEl.style.borderRadius = '4px';
+      nameEl.style.transform = 'translate(10px, -50%)';
+      nameEl.style.fontSize = '12px';
+      nameEl.textContent = streetViews[currentRound].name;
+      resultsMapEl.appendChild(nameEl);
+    }
+    
+    // Calculate distance between two coordinates in kilometers
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371; // Radius of the earth in km
+      const dLat = deg2rad(lat2 - lat1);
+      const dLon = deg2rad(lon2 - lon1);
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2); 
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+      const d = R * c; // Distance in km
+      return d;
+    }
+    
+    // Convert degrees to radians
+    function deg2rad(deg) {
+      return deg * (Math.PI/180);
+    }
+    
+    // Helper functions for results map line
+    function calculateLineWidth(point1, point2) {
+      const x1 = ((point1.lng + 180) / 360) * resultsMapEl.offsetWidth;
+      const x2 = ((point2.lng + 180) / 360) * resultsMapEl.offsetWidth;
+      const y1 = ((90 - point1.lat) / 180) * resultsMapEl.offsetHeight;
+      const y2 = ((90 - point2.lat) / 180) * resultsMapEl.offsetHeight;
+      return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    }
+    
+    function calculateLineLeft(point1, point2) {
+      return ((point1.lng + 180) / 360) * resultsMapEl.offsetWidth;
+    }
+    
+    function calculateLineTop(point1, point2) {
+      return ((90 - point1.lat) / 180) * resultsMapEl.offsetHeight;
+    }
+    
+    function calculateLineAngle(point1, point2) {
+      const x1 = ((point1.lng + 180) / 360) * resultsMapEl.offsetWidth;
+      const x2 = ((point2.lng + 180) / 360) * resultsMapEl.offsetWidth;
+      const y1 = ((90 - point1.lat) / 180) * resultsMapEl.offsetHeight;
+      const y2 = ((90 - point2.lat) / 180) * resultsMapEl.offsetHeight;
+      return Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+    }
+    
+    // Shuffle array in place
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+    
+    // Event listeners
+    mapEl.addEventListener('click', handleMapClick);
+    guessBtn.addEventListener('click', makeGuess);
+    nextBtn.addEventListener('click', nextRound);
+    startBtn.addEventListener('click', function() {
+      startScreen.style.display = 'none';
+      initGame();
+    });
+    restartBtn.addEventListener('click', function() {
+      endScreen.style.display = 'none';
+      initGame();
+    });
+  </script>
+</body>
+</html> 

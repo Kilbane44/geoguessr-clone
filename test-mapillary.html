@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapillary API Test</title>
+  <link rel="stylesheet" href="https://unpkg.com/mapillary-js@4.1.0/dist/mapillary.min.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    .header {
+      background-color: #333;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    .viewer-container {
+      flex: 1;
+      min-height: 500px;
+    }
+    .controls {
+      background-color: #eee;
+      padding: 1rem;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+    }
+    .status {
+      padding: 1rem;
+      background-color: #f8f8f8;
+      border-top: 1px solid #ddd;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #log {
+      height: 100px;
+      overflow-y: auto;
+      background-color: #f0f0f0;
+      padding: 0.5rem;
+      font-family: monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Mapillary API Test</h1>
+    </div>
+    
+    <div id="viewer" class="viewer-container"></div>
+    
+    <div class="controls">
+      <button id="testButton">Test Another Image</button>
+      <button id="logButton">Log Viewer State</button>
+      <button id="clearButton">Clear Log</button>
+    </div>
+    
+    <div class="status">
+      <p>Current Image ID: <span id="currentImage">None</span></p>
+      <p>Status: <span id="status">Not initialized</span></p>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/mapillary-js@4.1.0/dist/mapillary.min.js"></script>
+  <script>
+    // Verified image IDs
+    const VERIFIED_IMAGE_IDS = [
+      '3249811962032522', // New York
+      '220382739441518',  // London
+      '523560791746997',  // Tokyo
+      '639275613618794',  // Paris
+      '373379306060481',  // San Francisco
+      '297058963603222',  // Barcelona
+      '978464899099896',  // Berlin
+      '390681174373195',  // Sydney
+      '491048611671744',  // Rome
+      '312640296565218'   // Amsterdam
+    ];
+    
+    // API token
+    const MAPILLARY_ACCESS_TOKEN = 'MLY|9448149998553326|65d9d95e8f0fe1908309059d4e35130b';
+    
+    // DOM elements
+    const viewerElement = document.getElementById('viewer');
+    const currentImageElement = document.getElementById('currentImage');
+    const statusElement = document.getElementById('status');
+    const logElement = document.getElementById('log');
+    const testButton = document.getElementById('testButton');
+    const logButton = document.getElementById('logButton');
+    const clearButton = document.getElementById('clearButton');
+    
+    // Viewer reference
+    let viewer = null;
+    let currentImageId = null;
+    
+    // Log function
+    function log(message) {
+      const entry = document.createElement('div');
+      entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+      logElement.appendChild(entry);
+      logElement.scrollTop = logElement.scrollHeight;
+    }
+    
+    // Initialize the viewer
+    function initViewer(imageId) {
+      // Clean up if there's an existing viewer
+      if (viewer) {
+        try {
+          viewer.remove();
+          log('Removed previous viewer');
+        } catch (error) {
+          log(`Error removing viewer: ${error.message}`);
+        }
+      }
+      
+      // Update UI
+      currentImageId = imageId;
+      currentImageElement.textContent = imageId;
+      statusElement.textContent = 'Initializing...';
+      log(`Initializing with image ID: ${imageId}`);
+      
+      try {
+        // Create the viewer
+        viewer = new Mapillary.Viewer({
+          accessToken: MAPILLARY_ACCESS_TOKEN,
+          container: viewerElement,
+          imageId: imageId
+        });
+        
+        // Set up event listeners
+        viewer.on(Mapillary.ViewerEventType.IMAGE_SET, () => {
+          statusElement.textContent = 'Image loaded successfully';
+          log('Image set successfully');
+        });
+        
+        viewer.on(Mapillary.ViewerEventType.ERROR, (error) => {
+          statusElement.textContent = 'Error';
+          log(`Error: ${JSON.stringify(error)}`);
+        });
+        
+        // Return the viewer
+        return viewer;
+      } catch (error) {
+        statusElement.textContent = 'Failed to initialize';
+        log(`Initialization error: ${error.message}`);
+        return null;
+      }
+    }
+    
+    // Start with a random image
+    function loadRandomImage() {
+      const randomIndex = Math.floor(Math.random() * VERIFIED_IMAGE_IDS.length);
+      const imageId = VERIFIED_IMAGE_IDS[randomIndex];
+      initViewer(imageId);
+    }
+    
+    // Event listeners
+    testButton.addEventListener('click', loadRandomImage);
+    
+    logButton.addEventListener('click', () => {
+      if (viewer) {
+        log(`Viewer state: ${viewer.getState() ? 'active' : 'inactive'}`);
+        log(`Current image: ${currentImageId}`);
+      } else {
+        log('No active viewer');
+      }
+    });
+    
+    clearButton.addEventListener('click', () => {
+      logElement.innerHTML = '';
+    });
+    
+    // Initialize on page load
+    window.addEventListener('load', loadRandomImage);
+  </script>
+</body>
+</html> 

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Street View Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        #street-view {
+            width: 100%;
+            height: 500px;
+            margin: 20px 0;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Google Street View Test</h1>
+    
+    <div class="controls">
+        <button onclick="loadLocation('newyork')">New York</button>
+        <button onclick="loadLocation('london')">London</button>
+        <button onclick="loadLocation('tokyo')">Tokyo</button>
+        <button onclick="loadLocation('paris')">Paris</button>
+        <button onclick="loadLocation('sf')">San Francisco</button>
+    </div>
+
+    <div id="status" class="status">Status: Ready</div>
+    <div id="street-view"></div>
+
+    <script>
+        let panorama = null;
+        const locations = {
+            newyork: { lat: 40.7812, lng: -73.9665, name: 'Central Park, New York' },
+            london: { lat: 51.5007, lng: -0.1246, name: 'London Eye, London' },
+            tokyo: { lat: 35.6895, lng: 139.6917, name: 'Shinjuku, Tokyo' },
+            paris: { lat: 48.8566, lng: 2.3522, name: 'Eiffel Tower, Paris' },
+            sf: { lat: 37.7749, lng: -122.4194, name: 'San Francisco' }
+        };
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = 'Status: ' + message;
+        }
+
+        function loadLocation(key) {
+            const location = locations[key];
+            updateStatus(`Loading ${location.name}...`);
+
+            if (!window.google) {
+                updateStatus('Google Maps API not loaded. Loading...');
+                const script = document.createElement('script');
+                script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBJQmU6Bt9rHC2G5oHQFVjPbZcXomI9duU&libraries=places`;
+                script.async = true;
+                script.defer = true;
+                script.onload = () => initializeStreetView(location);
+                document.head.appendChild(script);
+            } else {
+                initializeStreetView(location);
+            }
+        }
+
+        function initializeStreetView(location) {
+            updateStatus(`Initializing Street View for ${location.name}...`);
+            
+            try {
+                if (panorama) {
+                    panorama = null;
+                }
+
+                panorama = new google.maps.StreetViewPanorama(
+                    document.getElementById('street-view'),
+                    {
+                        position: { lat: location.lat, lng: location.lng },
+                        pov: { heading: 165, pitch: 0 },
+                        zoom: 1,
+                        addressControl: false,
+                        showRoadLabels: false,
+                        zoomControl: false,
+                        panControl: false,
+                        fullscreenControl: false,
+                        motionTracking: false,
+                        motionTrackingControl: false
+                    }
+                );
+
+                panorama.addListener('status_changed', () => {
+                    if (panorama.getStatus() === 'OK') {
+                        updateStatus(`Street View loaded successfully for ${location.name}`);
+                    } else {
+                        updateStatus(`Street View not available at ${location.name}. Status: ${panorama.getStatus()}`);
+                    }
+                });
+
+            } catch (error) {
+                updateStatus(`Error: ${error.message}`);
+                console.error('Street View Error:', error);
+            }
+        }
+
+        // Load New York by default
+        window.onload = () => loadLocation('newyork');
+    </script>
+</body>
+</html> 

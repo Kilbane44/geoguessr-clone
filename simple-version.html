@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoGuessr Clone - Simple Version</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f0f0f0;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      text-align: center;
+    }
+    
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: #333;
+    }
+    
+    p {
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+      line-height: 1.5;
+    }
+    
+    .card {
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+      margin-top: 2rem;
+    }
+    
+    .btn {
+      background-color: #2196F3;
+      border: none;
+      color: white;
+      padding: 12px 30px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 18px;
+      margin-top: 1rem;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+    
+    .btn:hover {
+      background-color: #0b7dda;
+    }
+    
+    .steps {
+      text-align: left;
+      margin-top: 1rem;
+    }
+    
+    .steps li {
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>GeoGuessr Clone</h1>
+    <p>Welcome to the GeoGuessr Clone project!</p>
+    
+    <div class="card">
+      <h2>Getting Started</h2>
+      <p>This is a simplified landing page because the full application requires Node.js to be installed.</p>
+      
+      <div class="steps">
+        <h3>To run the full application:</h3>
+        <ol>
+          <li>Download and install <a href="https://nodejs.org/" target="_blank">Node.js</a> (LTS version recommended)</li>
+          <li>During installation, make sure to check the option to add Node.js to your PATH</li>
+          <li>Close and reopen your command prompt</li>
+          <li>Run the <code>start.bat</code> file in this directory</li>
+          <li>Select option 1 to install dependencies</li>
+          <li>Then select option 2 to start the application</li>
+        </ol>
+      </div>
+      
+      <h3>Alternative Method</h3>
+      <p>If you can't install Node.js, you can use a local server extension:</p>
+      <ol>
+        <li>Install the <a href="https://chrome.google.com/webstore/detail/web-server-for-chrome/ofhbbkphhbklhfoeikjpcbhemlocgigb" target="_blank">Web Server for Chrome</a> extension</li>
+        <li>Open the extension and select this folder</li>
+        <li>Click the URL shown (usually http://127.0.0.1:8887)</li>
+      </ol>
+      
+      <a href="https://nodejs.org/" target="_blank" class="btn">Download Node.js</a>
+    </div>
+  </div>
+</body>
+</html> 

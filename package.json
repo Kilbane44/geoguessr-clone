@@ -1,0 +1,41 @@
+{
+  "name": "geoguessr-clone",
+  "version": "1.0.0",
+  "description": "A GeoGuessr style web game",
+  "scripts": {
+    "start": "parcel index.html",
+    "build": "parcel build index.html"
+  },
+  "keywords": [
+    "geography",
+    "game",
+    "maps"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "leaflet": "^1.9.4",
+    "mapillary-js": "^4.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-leaflet": "^4.2.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.5",
+    "@babel/preset-env": "^7.22.5",
+    "@babel/preset-react": "^7.22.5",
+    "@parcel/transformer-js": "^2.9.3",
+    "@parcel/transformer-react-refresh-wrap": "^2.9.3",
+    "parcel": "^2.9.3",
+    "process": "^0.11.10"
+  },
+  "babel": {
+    "presets": [
+      "@babel/preset-env",
+      ["@babel/preset-react", {"runtime": "automatic"}]
+    ]
+  },
+  "browserslist": [
+    "last 2 Chrome versions"
+  ]
+} 
