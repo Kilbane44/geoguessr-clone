@@ -37,6 +37,44 @@
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    .compass {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    .compass::before {
+      content: "N";
+      position: absolute;
+      top: 5px;
+      color: #ff0000;
+    }
+    .compass::after {
+      content: "S";
+      position: absolute;
+      bottom: 5px;
+      color: #000;
+    }
+    .compass-arrow {
+      width: 2px;
+      height: 20px;
+      background: #000;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform-origin: bottom center;
+      transform: translate(-50%, -100%);
     }
     #map {
       width: 100%;
@@ -107,7 +145,11 @@
     </div>
 
     <div class="map-container">
-      <div id="street-view" class="street-view"></div>
+      <div id="street-view" class="street-view">
+        <div class="compass">
+          <div class="compass-arrow"></div>
+        </div>
+      </div>
       <div id="map"></div>
     </div>
 
@@ -140,8 +182,8 @@
 
     // Function to generate random coordinates
     function getRandomCoordinates() {
-      // Generate random latitude between -90 and 90
-      const lat = Math.random() * 180 - 90;
+      // Generate random latitude between -55 and 70 (excluding extreme north/south)
+      const lat = Math.random() * 125 - 55;
       // Generate random longitude between -180 and 180
       const lng = Math.random() * 360 - 180;
       return { lat, lng };
@@ -202,8 +244,11 @@
     function initGame() {
       // Initialize map
       map = L.map('map').setView([0, 0], 2);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 19,
+        minZoom: 2
       }).addTo(map);
 
       // Load Google Maps API
@@ -237,6 +282,13 @@
             motionTrackingControl: false
           }
         );
+
+        // Add compass rotation handler
+        panorama.addListener('pov_changed', function() {
+          const compass = document.querySelector('.compass');
+          const heading = panorama.getPov().heading;
+          compass.style.transform = `rotate(${heading}deg)`;
+        });
 
         // Reset map and marker
         map.setView([0, 0], 2);
