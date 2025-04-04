@@ -2,6 +2,12 @@
 
 A web-based geography game where players guess locations based on Street View images.
 
+
+## Live Demo
+
+Play the game at: [GeoGuessr Clone](https://kilbane44.github.io/geoguessr-clone)
+
+
 ## Setup
 
 1. Clone the repository
@@ -31,9 +37,7 @@ A web-based geography game where players guess locations based on Street View im
 - Leaflet.js for the interactive map
 - HTML5/CSS3/JavaScript
 
-## Live Demo
 
-Play the game at: [GeoGuessr Clone](https://kilbane44.github.io/geoguessr-clone)
 
 ## Local Development
 
