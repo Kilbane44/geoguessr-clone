@@ -188,9 +188,39 @@
     #mute-btn:hover {
       background: rgba(0, 0, 0, 0.6);
     }
+    #loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      display: flex; /* Use flexbox for centering */
+      justify-content: center;
+      align-items: center;
+      font-size: 2em;
+      z-index: 2000; /* Ensure it's on top */
+      display: none; /* Hidden by default */
+    }
+    #loading-overlay button {
+      /* Style the button inside the overlay */
+      margin-top: 20px;
+      padding: 10px 25px;
+      font-size: 0.8em; 
+      display: none; /* Hidden initially */
+    }
   </style>
 </head>
 <body>
+  <!-- Loading Overlay -->
+  <div id="loading-overlay">
+    <div>
+      <div id="loading-text">Loading Location...</div>
+      <button id="start-round-button">Start Round</button>
+    </div>
+  </div>
+
   <div class="container">
     <div id="street-view" class="street-view">
       <h1 class="game-title">GeoGuessr Clone</h1>
@@ -231,6 +261,7 @@
     const maxRounds = 5;
     let totalScore = 0;
     let usedLocations = [];
+    let roundResults = []; // Array to store results for final display
 
     // Function to generate random coordinates
     function getRandomCoordinates() {
@@ -261,49 +292,75 @@
       });
     }
 
-    // Function to find a random location with Street View coverage
+    // Function to find a random location with Street View coverage AND known country
     async function findRandomLocation() {
       let attempts = 0;
-      const maxAttempts = 50; // Limit attempts to prevent infinite loop
+      const maxAttempts = 50; 
 
       while (attempts < maxAttempts) {
         const coords = getRandomCoordinates();
         
-        // Check if this location has been used before
         const isUsed = usedLocations.some(loc => 
           Math.abs(loc.lat - coords.lat) < 0.1 && 
           Math.abs(loc.lng - coords.lng) < 0.1
         );
 
         if (!isUsed) {
-          const result = await checkStreetViewCoverage(coords.lat, coords.lng);
-          
-          if (result.hasCoverage) {
-            // Check if country is known before accepting the location
-            const country = await getCountryFromLatLng(result.location.lat, result.location.lng);
+          console.log(`Attempt ${attempts + 1}: Checking ${coords.lat}, ${coords.lng}`);
+          // --- Check Coverage --- 
+          let coverageStatus = 'UNKNOWN'; // Variable to store status
+          const coverageResult = await checkStreetViewCoverage(coords.lat, coords.lng)
+             .then(result => { 
+                 coverageStatus = result.status || 'OK'; // Store status ('OK' if status field missing but data present)
+                 return result; 
+             })
+             .catch(err => { 
+                 console.error("Error during coverage check:", err);
+                 coverageStatus = 'ERROR_CHECKING';
+                 return { hasCoverage: false }; // Treat error as no coverage
+             });
+          // -------------------
+
+          if (coverageResult.hasCoverage) {
+            console.log(`Coverage found at ${coverageResult.location.lat}, ${coverageResult.location.lng}. Checking country...`);
+            // --- Check Country --- 
+            let geocodeStatus = 'UNKNOWN';
+            const country = await getCountryFromLatLng(coverageResult.location.lat, coverageResult.location.lng)
+              .then(result => { 
+                  geocodeStatus = result.status; // Store status
+                  return result.country;
+              })
+              .catch(err => { 
+                  console.error("Error during geocoding:", err);
+                  geocodeStatus = 'ERROR_CHECKING';
+                  return "Unknown"; // Treat error as Unknown country
+              });
+            // -------------------
+            
             if (country !== "Unknown") {
-              console.log(`Found valid location: ${result.location.lat}, ${result.location.lng} in ${country}`);
-              usedLocations.push(result.location);
-              return result.location;
+              console.log(`Found valid location in ${country}.`);
+              usedLocations.push(coverageResult.location);
+              await new Promise(resolve => setTimeout(resolve, 500)); 
+              return coverageResult.location;
             } else {
-              console.log(`Skipping location (${result.location.lat}, ${result.location.lng}) due to unknown country.`);
-              // Don't add to usedLocations, let the loop continue
+              console.log(`Skipping location due to unknown country. Geocode Status: ${geocodeStatus}`);
             }
+          } else {
+             console.log(`No coverage found. Coverage Status: ${coverageStatus}`);
           }
         }
         
         attempts++;
         
-        // Add a small delay to avoid hitting rate limits
+        // Delay before next attempt
         if (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 250)); // Increased delay to 250ms
+          await new Promise(resolve => setTimeout(resolve, 500)); 
         }
       }
 
       console.error('Could not find a suitable Street View location after', maxAttempts, 'attempts.');
-      // If we couldn't find a new location, reset the used locations list
-      usedLocations = [];
-      return findRandomLocation();
+      // Throw an error instead of retrying recursively
+      throw new Error(`Failed to find a valid location after ${maxAttempts} attempts.`); 
     }
 
     // Initialize the game
@@ -333,82 +390,129 @@
         const geocoder = new google.maps.Geocoder();
         const latlng = { lat: lat, lng: lng };
         geocoder.geocode({ location: latlng }, (results, status) => {
+          let country = "Unknown";
           if (status === "OK") {
             if (results[0]) {
               for (const component of results[0].address_components) {
                 if (component.types.includes("country")) {
-                  resolve(component.long_name);
-                  return;
+                  country = component.long_name;
+                  break; // Found country, exit loop
                 }
               }
-              resolve("Unknown"); // Country not found in components
-            } else {
-              resolve("Unknown"); // No results found
-            }
+              // If loop finishes without finding country, it remains "Unknown"
+            } // else: No results, country remains "Unknown"
           } else {
             console.error("Geocoder failed due to: " + status);
-            resolve("Unknown"); // Geocoding failed
+            // Geocoding failed, country remains "Unknown"
           }
+          resolve({ country: country, status: status }); // Resolve with both country and status
         });
       });
     }
 
     // Start a new round
     async function startNewRound() {
+      const loadingOverlay = document.getElementById('loading-overlay');
+      const loadingText = document.getElementById('loading-text');
+      const startRoundBtn = document.getElementById('start-round-button');
+      
+      // Reset overlay state
+      loadingText.textContent = 'Loading Location...';
+      startRoundBtn.style.display = 'none';
+      startRoundBtn.onclick = null; // Remove previous listener if any
+      loadingOverlay.style.display = 'flex'; // Show loading overlay
+      
+      let locationFound = false;
+
       try {
-        // Get a random location with Street View coverage
-        currentLocation = await findRandomLocation();
-
-        // Initialize Street View
-        panorama = new google.maps.StreetViewPanorama(
-          document.getElementById('street-view'),
-          {
-            position: { lat: currentLocation.lat, lng: currentLocation.lng },
-            pov: { heading: 165, pitch: 0 },
-            zoom: 1,
-            addressControl: false,
-            showRoadLabels: false,
-            zoomControl: false,
-            panControl: false,
-            fullscreenControl: false,
-            motionTracking: false,
-            motionTrackingControl: false
-          }
-        );
-
-        // Add compass rotation handler
-        panorama.addListener('pov_changed', function() {
-          const compass = document.querySelector('.compass');
-          const heading = panorama.getPov().heading;
-          compass.style.transform = `rotate(${heading}deg)`;
-        });
-
-        // Reset map and marker
-        map.setView([0, 0], 2);
-        if (marker) {
-          map.removeLayer(marker);
+        console.log("Starting location search...");
+        try {
+          currentLocation = await findRandomLocation();
+          locationFound = true; 
+        } catch (findError) {
+          console.error("findRandomLocation failed:", findError);
+          alert("Having trouble finding a suitable location. Please try refreshing the page.");
+          loadingOverlay.style.display = 'none';
+          return; // Stop if location finding failed
         }
-        marker = null;
+        
+        // Location found - update overlay and wait for user click
+        console.log("Location found, waiting for user to start round...");
+        loadingText.textContent = 'Location Ready!';
+        startRoundBtn.style.display = 'block';
 
-        // Reset UI
-        console.log('Resetting UI for new round');
-        document.getElementById('guess-btn').style.display = 'block';
-        document.getElementById('next-btn').style.display = 'none';
-        document.getElementById('round').textContent = currentRound;
-        document.getElementById('distance-display').style.display = 'none';
-        document.getElementById('actual-country-display').style.display = 'none'; 
-        document.getElementById('guessed-country-display').style.display = 'none';
+        // Add a one-time listener to the button
+        startRoundBtn.onclick = () => {
+          console.log("Start Round button clicked, initializing panorama...");
+          loadingOverlay.style.display = 'none'; // Hide overlay first
 
-        // Add click handler to map
-        map.on('click', function(e) {
-          if (marker) {
-            map.removeLayer(marker);
+          try { // Wrap the rest in a try block
+            // Initialize Street View 
+            panorama = new google.maps.StreetViewPanorama(
+              document.getElementById('street-view'),
+              {
+                position: { lat: currentLocation.lat, lng: currentLocation.lng },
+                pov: { heading: 165, pitch: 0 },
+                zoom: 1,
+                addressControl: false,
+                showRoadLabels: false,
+                zoomControl: false,
+                panControl: false,
+                fullscreenControl: false,
+                motionTracking: false,
+                motionTrackingControl: false
+              }
+            );
+            
+            console.log("Panorama initialized.");
+
+            // Add compass rotation handler
+            panorama.addListener('pov_changed', function() {
+              const compass = document.querySelector('.compass');
+              const heading = panorama.getPov().heading;
+              compass.style.transform = `rotate(${heading}deg)`;
+            });
+
+            // Reset map and marker
+            map.setView([0, 0], 2);
+            map.eachLayer(function (layer) {
+                if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                    map.removeLayer(layer);
+                }
+            });
+            marker = null;
+
+            // Reset UI
+            console.log('Resetting UI for new round');
+            document.getElementById('guess-btn').style.display = 'block';
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('round').textContent = currentRound;
+            document.getElementById('distance-display').style.display = 'none';
+            document.getElementById('actual-country-display').style.display = 'none'; 
+            document.getElementById('guessed-country-display').style.display = 'none';
+
+            // Add click handler to map
+            map.on('click', function(e) {
+              if (marker) {
+                map.removeLayer(marker);
+              }
+              marker = L.marker(e.latlng).addTo(map);
+            });
+          } catch(initError) {
+             console.error("Error during round initialization after button click:", initError);
+             alert("An error occurred starting the round. Please refresh.");
+             // Ensure overlay is hidden even if error occurs here
+             loadingOverlay.style.display = 'none';
           }
-          marker = L.marker(e.latlng).addTo(map);
-        });
+        }; // End of button onclick listener
+
       } catch (error) {
-        console.error('Error starting new round:', error);
-        alert('Error loading new location. Please try again.');
+        // This outer catch mainly handles unexpected errors before findRandomLocation finishes
+        console.error('Error starting new round (outer try):', error);
+        if (!locationFound) { 
+            alert('An error occurred while searching for a location. Please try refreshing.');
+        }
+        loadingOverlay.style.display = 'none';
       }
     }
 
@@ -430,17 +534,23 @@
       const score = Math.max(0, Math.round(5000 * Math.exp(-distance / 2000)));
       totalScore += score;
 
-      // Show actual location
+      // -- Store results for final display --
+      roundResults.push({
+        guessLatLng: { lat: guessLat, lng: guessLng },
+        actualLatLng: { lat: currentLocation.lat, lng: currentLocation.lng }
+      });
+      // -------------------------------------
+
+      // --- Draw current round guess/actual/line --- 
       const actualMarker = L.marker([currentLocation.lat, currentLocation.lng], {
         icon: L.divIcon({
           className: 'actual-location-marker',
-          html: '<div style="background-color: red; width: 20px; height: 20px; border-radius: 50%;"></div>',
-          iconSize: [20, 20],
-          iconAnchor: [10, 10]
+          html: '<div style="background-color: red; width: 12px; height: 12px; border-radius: 50%; border: 1px solid white;"></div>',
+          iconSize: [12, 12],
+          iconAnchor: [6, 6]
         })
       }).addTo(map);
 
-      // Draw line between guess and actual location
       const line = L.polyline([
         [guessLat, guessLng],
         [currentLocation.lat, currentLocation.lng]
@@ -450,12 +560,13 @@
         opacity: 0.7
       }).addTo(map);
 
-      // Fit map to show both markers
+      // Fit map to show current guess and actual location
       const bounds = L.latLngBounds([
         [guessLat, guessLng],
         [currentLocation.lat, currentLocation.lng]
       ]);
       map.fitBounds(bounds, { padding: [50, 50] });
+      // ---------------------------------------------
 
       // --- Get Country Information --- 
       console.log('Getting country information...');
@@ -474,7 +585,7 @@
       }
       // --- End Get Country Information ---
 
-      // Show results (score, distance, countries)
+      // Show results (score, distance, countries) for the current round
       document.getElementById('score').textContent = totalScore;
 
       const distanceDisplay = document.getElementById('distance-display');
@@ -520,8 +631,14 @@
         const mapContainer = document.querySelector('.map-container');
         mapContainer.classList.remove('expanded');
         console.log('Map container classes:', mapContainer.className);
+
+        // Remove the marker from the last guess
+        if (marker) {
+          map.removeLayer(marker);
+          marker = null;
+        }
         
-        // Reset buttons and displays
+        // Reset buttons and displays for the new round
         document.getElementById('guess-btn').style.display = 'block';
         document.getElementById('next-btn').style.display = 'none';
         document.getElementById('distance-display').style.display = 'none';
@@ -531,19 +648,90 @@
         
         startNewRound();
       } else {
-        alert(`Game Over! Your final score: ${totalScore}`);
-        // Reset game
-        currentRound = 1;
-        totalScore = 0;
-        // Optionally reset map state here if needed before starting over
+        // --- Game Over - Final Results Display ---
+        console.log('Game Over - Displaying results');
         const mapContainer = document.querySelector('.map-container');
-        mapContainer.classList.remove('expanded');
-        document.getElementById('guess-btn').style.display = 'block';
-        document.getElementById('next-btn').style.display = 'none';
+        mapContainer.classList.add('expanded'); // Ensure map is expanded
+
+        // Clear the last guess marker if it exists
+        if (marker) {
+          map.removeLayer(marker);
+          marker = null;
+        }
+
+        // Hide individual round result displays
         document.getElementById('distance-display').style.display = 'none';
-        document.getElementById('actual-country-display').style.display = 'none';
+        document.getElementById('actual-country-display').style.display = 'none'; 
         document.getElementById('guessed-country-display').style.display = 'none';
-        startNewRound();
+
+        // Array to hold all points for bounds calculation
+        const allPoints = [];
+        
+        // Iterate and display all results
+        roundResults.forEach((result, index) => {
+          const guessLatLng = [result.guessLatLng.lat, result.guessLatLng.lng];
+          const actualLatLng = [result.actualLatLng.lat, result.actualLatLng.lng];
+
+          allPoints.push(guessLatLng);
+          allPoints.push(actualLatLng);
+
+          // Add Guess Marker (Blue with round number)
+          L.marker(guessLatLng, {
+              icon: L.divIcon({
+                className: 'guess-marker-final',
+                html: `<div style="background-color: blue; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; color: white; text-align: center; line-height: 18px; border: 1px solid white;">${index + 1}</div>`,
+                iconSize: [18, 18],
+                iconAnchor: [9, 9]
+              })
+            }).addTo(map);
+
+          // Add Actual Marker (Red with round number)
+          L.marker(actualLatLng, {
+            icon: L.divIcon({
+              className: 'actual-marker-final',
+              html: `<div style="background-color: red; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; color: white; text-align: center; line-height: 18px; border: 1px solid white;">${index + 1}</div>`,
+              iconSize: [18, 18],
+              iconAnchor: [9, 9]
+            })
+          }).addTo(map);
+
+          // Add Line (Grey, dashed)
+          L.polyline([guessLatLng, actualLatLng], {
+            color: 'grey',
+            weight: 2,
+            opacity: 0.7,
+            dashArray: '5, 5'
+          }).addTo(map);
+        });
+
+        // Fit map to show all points
+        if (allPoints.length > 0) {
+          const bounds = L.latLngBounds(allPoints);
+          map.fitBounds(bounds, { padding: [50, 50] });
+        }
+
+        // Update button text and behavior for "Play Again"
+        const nextBtn = document.getElementById('next-btn');
+        nextBtn.textContent = 'Play Again?';
+        nextBtn.style.display = 'block'; // Ensure it's visible
+        nextBtn.onclick = function() { // Change the onclick handler
+          console.log('Play Again clicked');
+          // Reset game state fully
+          currentRound = 1;
+          totalScore = 0;
+          roundResults = []; // Clear the results array
+          
+          // Reset UI (button text/visibility handled by startNewRound)
+          mapContainer.classList.remove('expanded'); 
+          nextBtn.onclick = nextRound; // Restore original handler
+                    
+          // Start a fresh game (clears map layers too)
+          startNewRound(); 
+        };
+
+        // Optionally display final score message
+        alert(`Game Over! Your final score: ${totalScore}`); 
+        // --- End Game Over Logic ---
       }
     }
 
