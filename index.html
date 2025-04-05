@@ -573,12 +573,13 @@
       let actualCountry = "Unknown";
       let guessedCountry = "Unknown";
       try {
+        console.log('Calling Promise.all for getCountryFromLatLng...');
         // Use Promise.all to run geocoding requests in parallel
         [actualCountry, guessedCountry] = await Promise.all([
-          getCountryFromLatLng(currentLocation.lat, currentLocation.lng),
-          getCountryFromLatLng(guessLat, guessLng)
+          getCountryFromLatLng(currentLocation.lat, currentLocation.lng).then(res => res.country), // Extract country
+          getCountryFromLatLng(guessLat, guessLng).then(res => res.country)          // Extract country
         ]);
-        console.log(`Actual: ${actualCountry}, Guessed: ${guessedCountry}`);
+        console.log(`Countries fetched - Actual: ${actualCountry}, Guessed: ${guessedCountry}`);
       } catch (error) {
         console.error("Error during reverse geocoding:", error);
         // Keep default "Unknown" values
@@ -586,8 +587,10 @@
       // --- End Get Country Information ---
 
       // Show results (score, distance, countries) for the current round
+      console.log('Updating score display...');
       document.getElementById('score').textContent = totalScore;
 
+      console.log('Updating distance display...');
       const distanceDisplay = document.getElementById('distance-display');
       const distanceSpan = distanceDisplay.querySelector('span');
       if (distance < 1) {
@@ -597,15 +600,24 @@
       }
       distanceDisplay.style.display = 'block';
 
+      console.log(`Updating country displays - Actual: ${actualCountry}, Guessed: ${guessedCountry}`);
       const actualCountryDisplay = document.getElementById('actual-country-display');
-      actualCountryDisplay.querySelector('span').textContent = actualCountry;
-      actualCountryDisplay.style.display = 'block';
+      if (actualCountryDisplay) {
+        actualCountryDisplay.querySelector('span').textContent = actualCountry;
+        actualCountryDisplay.style.display = 'block';
+      } else {
+        console.error('Actual country display element not found!');
+      }
 
       const guessedCountryDisplay = document.getElementById('guessed-country-display');
-      guessedCountryDisplay.querySelector('span').textContent = guessedCountry;
-      guessedCountryDisplay.style.display = 'block';
+      if (guessedCountryDisplay) {
+        guessedCountryDisplay.querySelector('span').textContent = guessedCountry;
+        guessedCountryDisplay.style.display = 'block';
+      } else {
+        console.error('Guessed country display element not found!');
+      }
 
-      console.log('Updating UI after guess...');
+      console.log('Updating UI after guess (buttons, map expansion)...');
       // Update UI - Hide guess, show next
       document.getElementById('guess-btn').style.display = 'none';
       document.getElementById('next-btn').style.display = 'block';
