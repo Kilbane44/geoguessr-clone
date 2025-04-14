@@ -40,6 +40,18 @@
       z-index: 1000;
       font-size: 1.2em;
     }
+    /* Style the link inside the title */
+    .game-title a {
+      color: white;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 5px 10px;
+      border-radius: 4px;
+      text-decoration: none; /* Remove underline */
+      display: inline-block; /* Needed for padding/background */
+    }
+    .game-title a:hover {
+      background: rgba(0, 0, 0, 0.7); /* Slightly darken on hover */
+    }
     .street-view {
       width: 100%;
       height: 100vh;
@@ -69,6 +81,15 @@
       transform: translate(50%, 50%);
       transform-origin: center center;
       z-index: 1010;
+    }
+    .map-container.final-summary {
+      width: 80vw;  /* Use viewport width for larger size */
+      height: 80vh; /* Use viewport height for larger size */
+      bottom: 50%;
+      right: 50%;
+      transform: translate(50%, 50%);
+      transform-origin: center center;
+      z-index: 1010; /* Ensure it stays on top */
     }
     .map-container:not(.expanded):hover {
       width: 800px;
@@ -226,7 +247,7 @@
 
   <div class="container">
     <div id="street-view" class="street-view">
-      <h1 class="game-title">GeoGuessr Clone</h1>
+      <h1 class="game-title"><a href="training_menu.html" title="Go to Training Menu">GeoGuessr Training</a></h1>
       <button id="mute-btn" title="Mute/Unmute Music">🔊</button>
       <div class="compass">
         <div class="compass-arrow"></div>
@@ -685,87 +706,73 @@
         // --- Game Over - Final Results Display ---
         console.log('Game Over - Displaying results');
         const mapContainer = document.querySelector('.map-container');
-        mapContainer.classList.add('expanded'); // Ensure map is expanded
+        mapContainer.classList.remove('expanded'); // Remove intermediate expanded state if present
+        mapContainer.classList.add('final-summary'); // Add class for final large size
+        console.log('Map container classes for final summary:', mapContainer.className);
 
-        // Clear the last guess marker if it exists
-        if (marker) {
-          map.removeLayer(marker);
-          marker = null;
-        }
+        // --- Delay final map rendering until after transition/invalidate --- 
+        setTimeout(() => {
+            console.log('Rendering final game results on map...');
+            // Clear previous layers (markers, lines)
+            map.eachLayer(function (layer) {
+                if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                    map.removeLayer(layer);
+                }
+            });
+            marker = null; // Ensure last guess marker is cleared reference-wise
 
-        // Hide individual round result displays
-        document.getElementById('distance-display').style.display = 'none';
-        document.getElementById('actual-country-display').style.display = 'none'; 
-        document.getElementById('guessed-country-display').style.display = 'none';
+            // Hide individual round result displays
+            document.getElementById('distance-display').style.display = 'none';
+            document.getElementById('actual-country-display').style.display = 'none';
+            document.getElementById('guessed-country-display').style.display = 'none';
+            document.getElementById('next-btn').textContent = "Play Again?"; // Change button text
+            document.getElementById('next-btn').onclick = () => location.reload(); // Reload page to restart
 
-        // Array to hold all points for bounds calculation
-        const allPoints = [];
-        
-        // Iterate and display all results
-        roundResults.forEach((result, index) => {
-          const guessLatLng = [result.guessLatLng.lat, result.guessLatLng.lng];
-          const actualLatLng = [result.actualLatLng.lat, result.actualLatLng.lng];
+            // Draw markers and lines for all rounds
+            const allLatLngs = [];
+            roundResults.forEach((result, index) => {
+                // Add guess marker (e.g., blue)
+                L.marker(result.guessLatLng, {
+                    icon: L.divIcon({
+                        className: 'final-guess-marker',
+                        html: `<div style="background-color: blue; width: 12px; height: 12px; border-radius: 50%; border: 1px solid white; text-align: center; color: white; font-size: 8px; line-height: 10px;">${index + 1}</div>`,
+                        iconSize: [12, 12],
+                        iconAnchor: [6, 6]
+                    })
+                }).addTo(map);
+                allLatLngs.push(result.guessLatLng);
 
-          allPoints.push(guessLatLng);
-          allPoints.push(actualLatLng);
+                // Add actual location marker (e.g., red)
+                L.marker(result.actualLatLng, {
+                     icon: L.divIcon({
+                        className: 'final-actual-marker',
+                        html: `<div style="background-color: red; width: 12px; height: 12px; border-radius: 50%; border: 1px solid white; text-align: center; color: white; font-size: 8px; line-height: 10px;">${index + 1}</div>`,
+                        iconSize: [12, 12],
+                        iconAnchor: [6, 6]
+                    })
+                }).addTo(map);
+                allLatLngs.push(result.actualLatLng);
 
-          // Add Guess Marker (Blue with round number)
-          L.marker(guessLatLng, {
-              icon: L.divIcon({
-                className: 'guess-marker-final',
-                html: `<div style="background-color: blue; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; color: white; text-align: center; line-height: 18px; border: 1px solid white;">${index + 1}</div>`,
-                iconSize: [18, 18],
-                iconAnchor: [9, 9]
-              })
-            }).addTo(map);
+                // Draw line between guess and actual
+                L.polyline([result.guessLatLng, result.actualLatLng], {
+                    color: 'gray',
+                    weight: 1,
+                    opacity: 0.6,
+                    dashArray: '5, 5'
+                }).addTo(map);
+            });
 
-          // Add Actual Marker (Red with round number)
-          L.marker(actualLatLng, {
-            icon: L.divIcon({
-              className: 'actual-marker-final',
-              html: `<div style="background-color: red; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; color: white; text-align: center; line-height: 18px; border: 1px solid white;">${index + 1}</div>`,
-              iconSize: [18, 18],
-              iconAnchor: [9, 9]
-            })
-          }).addTo(map);
-
-          // Add Line (Grey, dashed)
-          L.polyline([guessLatLng, actualLatLng], {
-            color: 'grey',
-            weight: 2,
-            opacity: 0.7,
-            dashArray: '5, 5'
-          }).addTo(map);
-        });
-
-        // Fit map to show all points
-        if (allPoints.length > 0) {
-          const bounds = L.latLngBounds(allPoints);
-          map.fitBounds(bounds, { padding: [50, 50] });
-        }
-
-        // Update button text and behavior for "Play Again"
-        const nextBtn = document.getElementById('next-btn');
-        nextBtn.textContent = 'Play Again?';
-        nextBtn.style.display = 'block'; // Ensure it's visible
-        nextBtn.onclick = function() { // Change the onclick handler
-          console.log('Play Again clicked');
-          // Reset game state fully
-          currentRound = 1;
-          totalScore = 0;
-          roundResults = []; // Clear the results array
-          
-          // Reset UI (button text/visibility handled by startNewRound)
-          mapContainer.classList.remove('expanded'); 
-          nextBtn.onclick = nextRound; // Restore original handler
-                    
-          // Start a fresh game (clears map layers too)
-          startNewRound(); 
-        };
-
-        // Optionally display final score message
-        alert(`Game Over! Your final score: ${totalScore}`); 
-        // --- End Game Over Logic ---
+            // Fit map to show all points
+            if (allLatLngs.length > 0) {
+                const allBounds = L.latLngBounds(allLatLngs);
+                map.fitBounds(allBounds, { padding: [50, 50] });
+                console.log('Final map bounds fitted.');
+            } else {
+                 console.log('No results to display on map.');
+                 map.setView([0, 0], 2); // Reset view if no results
+            }
+        }, 350); // Timeout matches the one used in makeGuess/nextRound
+        // -------------------------------------------------------------
       }
     }
 

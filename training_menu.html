@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoGuessr Training Menu</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .menu-container {
+            text-align: center;
+        }
+        .menu-title a {
+            font-size: 2.5em;
+            color: #333;
+            text-decoration: none; /* Remove underline */
+            margin-bottom: 40px;
+            display: block; /* Make it a block for margin */
+        }
+        .menu-title a:hover {
+            color: #555; /* Slightly change color on hover */
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 2 columns */
+            grid-template-rows: repeat(2, 1fr);    /* 2 rows */
+            gap: 20px; /* Space between boxes */
+            width: 70vw; /* Adjust width as needed */
+            height: 50vh; /* Adjust height as needed */
+            max-width: 600px; /* Max width */
+            max-height: 400px; /* Max height */
+        }
+        .grid-item {
+            background-color: #4CAF50;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8em;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .grid-item:hover {
+            background-color: #45a049;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-container">
+        <h1 class="menu-title"><a href="index.html" title="Back to Game">Training</a></h1>
+        <div class="grid-container">
+            <!-- Placeholder links for now -->
+            <a href="#" class="grid-item">Bollards</a>
+            <a href="#" class="grid-item">Plates</a>
+            <a href="#" class="grid-item">Signs</a>
+            <a href="#" class="grid-item">Posts</a>
+        </div>
+    </div>
+</body>
+</html> 
